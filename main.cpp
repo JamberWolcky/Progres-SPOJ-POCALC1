@@ -26,7 +26,8 @@ double calculate(double result, double number, char operation) {
 }
 
 // Function to print the result
-void printResult(double res) {
+void printResult(double res, bool isoperation) {
+
     if (isnan(res) || isinf(res)) {
         cout << setw(10) << "Error." << endl;
     } else {
@@ -50,49 +51,83 @@ void printResult(double res) {
             if (!decimalPart.empty()) {
                 s = s.substr(0, decimalPos + 1) + decimalPart + s.substr(exponentPos);
             } else {
-                s = s.substr(0, decimalPos) + s.substr(exponentPos);
+                s = s.substr(0, decimalPos + 1) + s.substr(exponentPos);
             }
             cout << setw(10) << s << endl;
         } else {
+
             stringstream stream;
             stream << fixed << setprecision(8) << res;
             string s = stream.str();
 
-            size_t decimalPos = s.find('.');
-            if (decimalPos != std::string::npos) {
-                size_t countDigits = 0;
-                size_t startPos = (s[0] == '-') ? 1 : 0; // Menentukan posisi awal untuk menghitung digit bilangan
+            if(isoperation == 1){
+                size_t decimalPos = s.find('.');
+                if (decimalPos != std::string::npos) {
+                    size_t countDigits = 0;
+                    size_t startPos = (s[0] == '-') ? 1 : 0; // Menentukan posisi awal untuk menghitung digit bilangan
 
-                for (size_t i = startPos; i < s.length(); ++i) {
-                    if (s[i] != '.' && s[i] != '-') {
-                        countDigits++;
-                    }
-                    if (countDigits == 8 && s[0] != '-') {
-                        if (s[i + 1] >= '5') {
-                            s[i]++;
+                    for (size_t i = startPos; i < s.length(); ++i) {
+                        if (s[i] != '.' && s[i] != '-') {
+                            countDigits++;
                         }
-                        s = s.substr(0, i + 1);
-                        break;
-                    }
-                    if (countDigits == 9 && s[0] == '-') {
-                        if (s[i + 1] >= '5') {
-                            s[i]++;
+                        if (countDigits == 8 && s[0] != '-') {
+                            if (s[i + 1] >= '5') {
+                                if(s[i] == '9') {
+                                    s[i-1]++;
+                                    s[i] = '0';
+                                }
+                                else s[i]++;
+                            }
+                            /*if (s[i + 1] >= '5') {
+                                s[i]++;
+                            }*/
+                            s = s.substr(0, i + 1);
+                            break;
                         }
-                        s = s.substr(0, i + 1);
-                        break;
+                        if (countDigits == 9 && s[0] == '-') {
+                            if (s[i + 1] >= '5') {
+                                if(s[i] == 9) s[i-1]++;
+                                else s[i]++;
+                            }
+                            s = s.substr(0, i + 1);
+                            break;
+                        }
+                        }
+                        s.erase(s.find_last_not_of('0') + 1, std::string::npos);
+                        if (s.back() == '.') {
+                            s.pop_back();
+                        }
+                        if (std::floor(res) == res) {
+                            s += '.';
+                        }
+                        if (s.length() > 10) {
+                            s = s.substr(0, 10);
+                        }
+                        cout << setw(10) << s << endl;
                     }
-                }
-                s.erase(s.find_last_not_of('0') + 1, std::string::npos);
-                if (s.back() == '.') {
-                    s.pop_back();
-                }
-                if (std::floor(res) == res) {
-                    s += '.';
-                }
-                if (s.length() > 10) {
-                    s = s.substr(0, 10);
-                }
-                cout << setw(10) << s << endl;
+            }
+            if(isoperation != 1){
+                    size_t countDigits = 0;
+                    size_t startPos = (s[0] == '-') ? 1 : 0;
+                    for (size_t i = startPos; i < s.length(); ++i){
+                        if (s[i] != '.' || s[i] != '-') {
+                            countDigits++;
+                        }
+                        if (countDigits == 9) {
+                            s = s.substr(0,  i + 1);
+                            break;
+                        }
+                    }
+
+                    s.erase(s.find_last_not_of('0') + 1, std::string::npos);
+                    if (s.back() == '.') {
+                        s.pop_back();
+                    }
+                    if (std::floor(res) == res) {
+                        s += '.';
+                    }
+
+                    cout << setw(10) << s << endl;
             }
         }
     }
@@ -107,6 +142,7 @@ void processTestcase(const vector<string>& tokens) {
     char operation = '+';  // Default operation
     double result = 0;
     bool hasDecimal = false;
+    bool isoperation = false;
     double decimalFactor = 1;
     int digitCount = 0;
     bool isFinalEqual = false; // Flag to check if '=' is the final token
@@ -117,6 +153,9 @@ void processTestcase(const vector<string>& tokens) {
         if (isdigit(token[1])) {
             if (digitCount < 8) {
                 double digit = token[1] - '0';
+                /*if (!hasDecimal && ) {
+                    ;
+                }*/
                 if (hasDecimal) {
                     decimalFactor *= 0.1;
                     number += digit * decimalFactor;
@@ -142,6 +181,7 @@ void processTestcase(const vector<string>& tokens) {
                 }
                 number = 0;
                 hasDecimal = false;
+                isoperation = true;
                 decimalFactor = 1;
                 digitCount = 0;
             }
@@ -166,6 +206,7 @@ void processTestcase(const vector<string>& tokens) {
                 operation = '+';
             }
         }
+
         else {
             // Reset everything
             result = 0;
@@ -174,13 +215,14 @@ void processTestcase(const vector<string>& tokens) {
             hasDecimal = false;
             decimalFactor = 1;
             digitCount = 0;
+            isoperation = false;
             continue;
         }
     }
 
     if (isFinalEqual) {
         // Print the final result only if '=' is the final token
-        printResult(result);
+        printResult(result, isoperation);
     }
 }
 
